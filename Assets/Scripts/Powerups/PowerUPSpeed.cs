@@ -4,7 +4,7 @@ using static PlayerScript;
 
 public class PowerUPSpeed : PowerUPBase
 {
-    [Header("Power Up Speed Up")]
+
     public float amountToSpeed;
     protected override void StartPowerUp()
     {
