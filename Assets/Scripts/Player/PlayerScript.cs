@@ -12,7 +12,6 @@ public class PlayerScript : Singleton<PlayerScript>
     public float lerpSpeed = 10f;
     public Vector2 pastPosition;
     public GameObject gameOverPanel;
-    public GameObject winPanel;
     public Rigidbody rb;
     private float flyTargetHeight;
     public float flyHeight = 3f;
@@ -25,15 +24,16 @@ public class PlayerScript : Singleton<PlayerScript>
     public GameObject player;
     public ParticleSystem deathParticle;
 
-
+    [Header("Ground Detection")]
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private float groundCheckDistance = 1.5f;
+    [SerializeField] private float groundStickForce = 2f;
 
     private float horizontalInput;
     private bool _canRun;
     private float _currentSpeed;
     private bool _isInvincible;
     private bool isFlying = false;
-
-
 
     public enum PowerUpType
     {
@@ -54,10 +54,8 @@ public class PlayerScript : Singleton<PlayerScript>
 
     void Start()
     {
-        
-        transform.localScale = Vector3.zero; 
+        transform.localScale = Vector3.zero;
         transform.DOScale(Vector3.one, 1f);
-
 
         _canRun = false;
         ResetSpeed();
@@ -66,7 +64,8 @@ public class PlayerScript : Singleton<PlayerScript>
 
     void Update()
     {
-        if (!_canRun) return;
+        if (!_canRun)
+            return;
 
         animator.SetFloat("Speed", rb.linearVelocity.magnitude);
 
@@ -78,8 +77,6 @@ public class PlayerScript : Singleton<PlayerScript>
             {
                 EndPowerUp(activePowerUps[i].type);
                 activePowerUps.RemoveAt(i);
-
-      
             }
         }
 
@@ -90,24 +87,21 @@ public class PlayerScript : Singleton<PlayerScript>
         }
         else
         {
-            horizontalInput = 0;
+            horizontalInput = 0f;
         }
 
         pastPosition = Input.mousePosition;
-
-
     }
 
     void FixedUpdate()
     {
+        if (!_canRun)
+            return;
 
-        if (!_canRun) return;
+        Vector3 velocityVector = rb.linearVelocity;
 
-        Vector3 velocityVector = new Vector3(
-            horizontalInput,
-            rb.linearVelocity.y,
-            _currentSpeed
-        );
+        velocityVector.x = horizontalInput;
+        velocityVector.z = _currentSpeed;
 
         if (isFlying)
         {
@@ -117,34 +111,74 @@ public class PlayerScript : Singleton<PlayerScript>
             }
             else
             {
-                velocityVector.y = 0f; 
+                velocityVector.y = 0f;
             }
+        }
+        else
+        {
+            StickToGround(ref velocityVector);
         }
 
         rb.linearVelocity = velocityVector;
     }
 
+    private void StickToGround(ref Vector3 velocityVector)
+    {
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.2f;
+
+        if (Physics.Raycast(
+            rayOrigin,
+            Vector3.down,
+            out RaycastHit hit,
+            groundCheckDistance,
+            groundLayer))
+        {
+            Vector3 normal = hit.normal;
+
+            float slopeAngle = Vector3.Angle(normal, Vector3.up);
+
+            if (slopeAngle > 0.1f)
+            {
+                Vector3 forwardDirection = Vector3.ProjectOnPlane(
+                    Vector3.forward,
+                    normal
+                ).normalized;
+
+                float verticalVelocity = forwardDirection.y * _currentSpeed;
+
+                velocityVector.y = verticalVelocity;
+
+                if (velocityVector.y > -groundStickForce)
+                {
+                    velocityVector.y -= groundStickForce;
+                }
+            }
+            else
+            {
+                velocityVector.y = -groundStickForce;
+            }
+        }
+        else
+        {
+            velocityVector.y += Physics.gravity.y * Time.fixedDeltaTime;
+        }
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
-        if(collision.gameObject.CompareTag("FinishLine"))
-        {
-            winPanel.SetActive(true);
-            animator.SetTrigger("Win");
-            StopPlayer();
-        }
+
         if (collision.gameObject.CompareTag("Obstacle"))
         {
             if (_isInvincible)
-            {
                 return;
-            }
+
             gameOverPanel.SetActive(true);
             animator.SetTrigger("IsDead");
             deathParticle.Play();
             StopPlayer();
-
         }
     }
+
     public void ResetSpeed()
     {
         _currentSpeed = forwardSpeed;
@@ -152,23 +186,24 @@ public class PlayerScript : Singleton<PlayerScript>
 
     public void ApplyPowerUp(PowerUpType type, float duration, float value = 0f)
     {
-
         var existing = activePowerUps.Find(p => p.type == type);
 
         if (existing != null)
         {
-
             existing.timer += duration;
         }
         else
         {
-            activePowerUps.Add(new ActivePowerUp { type = type, timer = duration });
+            activePowerUps.Add(new ActivePowerUp
+            {
+                type = type,
+                timer = duration
+            });
+
             StartPowerUp(type, value);
         }
-
     }
 
-    #region PowerUp Logic
     private void StartPowerUp(PowerUpType type, float value)
     {
         switch (type)
@@ -212,11 +247,7 @@ public class PlayerScript : Singleton<PlayerScript>
                 break;
         }
     }
-    #endregion
 
-
-
-    #region PowerUp Methods
     void EnableFly()
     {
         isFlying = true;
@@ -250,48 +281,40 @@ public class PlayerScript : Singleton<PlayerScript>
         gatherMagnet.SetActive(false);
     }
 
-    #endregion  
-
     IEnumerator StartCountdown()
     {
         timerUI.SetActive(true);
+
         int count = 3;
 
         while (count > 0)
         {
             countdownText.text = count.ToString();
+
             yield return new WaitForSeconds(1f);
+
             count--;
         }
 
         countdownText.text = "GO!";
+
         yield return new WaitForSeconds(0.5f);
 
         countdownText.gameObject.SetActive(false);
         timerUI.SetActive(false);
+
         _canRun = true;
     }
-
-    
 
     void StopPlayer()
     {
         _canRun = false;
 
-
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-
         horizontalInput = 0f;
 
-
         animator.SetFloat("Speed", 0f);
-
-
     }
-
-
-
 }
-

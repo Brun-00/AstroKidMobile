@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbb26d623f855c148b8903aaa797d6df, type: 3}
   m_Name: SOintCoins
   m_EditorClassIdentifier: Assembly-CSharp::SOInt
-  value: 3
+  value: 0

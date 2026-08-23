@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 8109780489779962976}
   - component: {fileID: 7078728948883303606}
   - component: {fileID: 2402909647976825803}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PFB_ObstacleGrow
   m_TagString: Obstacle
   m_Icon: {fileID: 0}

@@ -3,11 +3,22 @@ using Assets.Scripts;
 
 public class BackgroundManager : Singleton<BackgroundManager>
 {
-    public void ChangeSkybox(Material skyboxMaterial)
+    [SerializeField] private Material daySkybox;
+    [SerializeField] private Material nightSkybox;
+
+    private void Start()
     {
-        RenderSettings.skybox = skyboxMaterial;
+        SetRandomSkybox();
+    }
 
+    private void SetRandomSkybox()
+    {
+        Material selectedSkybox =
+            Random.value < 0.5f
+            ? daySkybox
+            : nightSkybox;
 
+        RenderSettings.skybox = selectedSkybox;
         DynamicGI.UpdateEnvironment();
     }
 }

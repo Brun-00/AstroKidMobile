@@ -8,12 +8,12 @@ public class LoadScene : MonoBehaviour
     public void Load(int i)
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(i);
+        SceneFader.Instance.LoadSceneWithFade(i);
     }
 
     public void load(string s)
     {
-            SceneManager.LoadScene(s);
+        SceneFader.Instance.LoadSceneWithFade(s);
     }
 }
 

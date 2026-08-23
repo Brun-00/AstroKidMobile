@@ -1,120 +1,146 @@
-using NUnit.Framework;
-using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
 using System.Collections.Generic;
 
 public class LevelManager : MonoBehaviour
 {
-    public Transform container;
+    [Header("Referências")]
+    [SerializeField] private Transform container;
+    [SerializeField] private Transform player;
 
-    public List<GameObject> levels;
+    [Header("Peças")]
+    [SerializeField] private List<PieceBase> levelPieces;
+    [SerializeField] private PieceBase firstPiece;
 
-    [Header("Level Pieces")]
-    public List<PieceBase> levelPieces;
-    public int piecesNumber = 10;
-    public PieceBase firstPiece;
-    public PieceBase finalPiece;
+    [Header("Configuração")]
+    [SerializeField] private int piecesAhead = 10;
 
-    private List<PieceBase> _spawnedPieces = new List<PieceBase>();
-
-
-    [SerializeField]private int _index;
-
-    private GameObject _currentLevel;
-
-    public ArtManager.ArtType currentArtType;
-
+    private Queue<PieceBase> _spawnedPieces = new Queue<PieceBase>();
+    private PieceBase _lastSpawnedPiece;
 
     private void Awake()
     {
-        //SpawnNextLevel();
-     
-        CreateLevelPieces();
+        CreateInitialPieces();
     }
-    /*private void SpawnNextLevel()
-    {
 
-        if(_currentLevel != null)
-        {
-            Destroy(_currentLevel);
-            _index++;
-            if(_index >= levels.Count)
-            {
-                _index = 0;
-            }
-        }
-        _currentLevel = Instantiate(levels[_index],container);
-        _currentLevel.transform.localPosition = Vector3.zero;    
-    }*/
-
-    private void CreateLevelPieces()
+    private void Update()
     {
-        
+        CheckPlayerProgress();
+    }
+
+    private void CreateInitialPieces()
+    {
         CleanSpawnedPieces();
 
-        for (int i = 0; i< piecesNumber; i++)
+        for (int i = 0; i < piecesAhead; i++)
         {
-            CreateLevelPiece(i);
+            SpawnNextPiece(i == 0);
         }
 
-        ColorManager.Instance.ChangeColorByType(currentArtType);
+    }
 
-        var setup = ArtManager.Instance.GetSetupByType(currentArtType);
+    private void CheckPlayerProgress()
+    {
+        if (player == null)
+            return;
 
-        if (setup != null)
+        if (_spawnedPieces.Count == 0)
+            return;
+
+        PieceBase oldestPiece = _spawnedPieces.Peek();
+
+        if (HasPlayerPassedPiece(oldestPiece))
         {
-            BackgroundManager.Instance.ChangeSkybox(setup.skybox);
+
+            SpawnNextPiece(false);
+
+            RemoveOldestPiece();
         }
     }
 
-    private void CreateLevelPiece(int index)
+    private bool HasPlayerPassedPiece(PieceBase piece)
     {
-        PieceBase piece;
+        if (piece == null || piece.endPoint == null)
+            return false;
 
-        if (index == 0)
+        Vector3 direction = piece.endPoint.position - piece.startPoint.position;
+
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude < 0.001f)
+            return false;
+
+        direction.Normalize();
+
+        Vector3 toPlayer = player.position - piece.endPoint.position;
+
+        toPlayer.y = 0f;
+
+        return Vector3.Dot(direction, toPlayer) > 0f;
+    }
+
+    private void SpawnNextPiece(bool isFirst)
+    {
+        if (levelPieces == null || levelPieces.Count == 0)
+            return;
+
+        PieceBase prefab;
+
+        if (isFirst && firstPiece != null)
         {
-            piece = firstPiece;
-        }
-        else if (index == piecesNumber - 1)
-        {
-            piece = finalPiece;
+            prefab = firstPiece;
         }
         else
         {
-            piece = levelPieces[Random.Range(0, levelPieces.Count)];
+            prefab = levelPieces[Random.Range(0, levelPieces.Count)];
         }
 
-        var spawnedPiece = Instantiate(piece, container);
 
-        if(_spawnedPieces.Count > 0)
+        PieceBase spawnedPiece = Instantiate(prefab, container);
+
+        if (_lastSpawnedPiece != null)
         {
-            var lastPiece = _spawnedPieces[_spawnedPieces.Count - 1];
+            Vector3 offset =
+                spawnedPiece.startPoint.position -
+                spawnedPiece.transform.position;
 
-            Vector3 offset = spawnedPiece.startPoint.position - spawnedPiece.transform.position;
-            spawnedPiece.transform.position = lastPiece.endPoint.position - offset;
-
+            spawnedPiece.transform.position =
+                _lastSpawnedPiece.endPoint.position - offset;
         }
         else
         {
             spawnedPiece.transform.position = Vector3.zero;
         }
 
-        foreach(var p in spawnedPiece.GetComponentsInChildren<ArtPiece>())
+        _spawnedPieces.Enqueue(spawnedPiece);
+
+        _lastSpawnedPiece = spawnedPiece;
+
+    }
+
+    private void RemoveOldestPiece()
+    {
+        if (_spawnedPieces.Count == 0)
+            return;
+
+        PieceBase piece = _spawnedPieces.Dequeue();
+
+        if (piece != null)
         {
-            p.ChangePiece(ArtManager.Instance.GetSetupByType(currentArtType).gameObject);
+            Destroy(piece.gameObject, 3f);
         }
-
-        _spawnedPieces.Add(spawnedPiece);
-
-
     }
 
     private void CleanSpawnedPieces()
     {
-        for(int i = _spawnedPieces.Count - 1; i >= 0 ; i--)
+        foreach (PieceBase piece in _spawnedPieces)
+        {
+            if (piece != null)
             {
-                Destroy(_spawnedPieces[i].gameObject);
+                Destroy(piece.gameObject);
             }
-            _spawnedPieces.Clear();
+        }
+
+        _spawnedPieces.Clear();
+        _lastSpawnedPiece = null;
     }
 }
