@@ -10,14 +10,15 @@ namespace Assets.Scripts
 
         private void Awake()
         {
+            // Create the singleton instance if none exists.
             if (Instance == null)
             {
                 Instance = GetComponent<T>();
             }
             else
             {
+                // Destroy duplicate instances.
                 Destroy(gameObject);
-
             }
         }
     }

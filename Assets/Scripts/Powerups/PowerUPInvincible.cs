@@ -5,6 +5,10 @@ public class PowerUPInvincible : PowerUPBase
 {
     protected override void StartPowerUp()
     {
-        PlayerScript.Instance.ApplyPowerUp(PowerUpType.Invincible, duration);
+        // Apply the invincibility power-up for its configured duration.
+        PlayerScript.Instance.ApplyPowerUp(
+            PowerUpType.Invincible,
+            duration
+        );
     }
 }

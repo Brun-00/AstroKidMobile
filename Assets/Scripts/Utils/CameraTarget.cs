@@ -6,10 +6,11 @@ public class CameraTarget : MonoBehaviour
 
     void LateUpdate()
     {
+        // Follow the player's depth while keeping the other axes fixed.
         transform.position = new Vector3(
-            0f,                
-            0f,                
-            player.position.z  
+            0f,
+            0f,
+            player.position.z
         );
     }
 }

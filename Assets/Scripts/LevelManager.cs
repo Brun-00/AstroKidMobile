@@ -19,23 +19,26 @@ public class LevelManager : MonoBehaviour
 
     private void Awake()
     {
+        // Create the initial set of level pieces.
         CreateInitialPieces();
     }
 
     private void Update()
     {
+        // Check whether the player has moved past the oldest piece.
         CheckPlayerProgress();
     }
 
     private void CreateInitialPieces()
     {
+        // Clear any previously spawned pieces.
         CleanSpawnedPieces();
 
+        // Fill the level with the configured number of pieces.
         for (int i = 0; i < piecesAhead; i++)
         {
             SpawnNextPiece(i == 0);
         }
-
     }
 
     private void CheckPlayerProgress()
@@ -48,11 +51,10 @@ public class LevelManager : MonoBehaviour
 
         PieceBase oldestPiece = _spawnedPieces.Peek();
 
+        // Replace the oldest piece once the player passes it.
         if (HasPlayerPassedPiece(oldestPiece))
         {
-
             SpawnNextPiece(false);
-
             RemoveOldestPiece();
         }
     }
@@ -62,7 +64,9 @@ public class LevelManager : MonoBehaviour
         if (piece == null || piece.endPoint == null)
             return false;
 
-        Vector3 direction = piece.endPoint.position - piece.startPoint.position;
+        Vector3 direction =
+            piece.endPoint.position -
+            piece.startPoint.position;
 
         direction.y = 0f;
 
@@ -71,10 +75,13 @@ public class LevelManager : MonoBehaviour
 
         direction.Normalize();
 
-        Vector3 toPlayer = player.position - piece.endPoint.position;
+        Vector3 toPlayer =
+            player.position -
+            piece.endPoint.position;
 
         toPlayer.y = 0f;
 
+        // Check whether the player has crossed the piece's endpoint.
         return Vector3.Dot(direction, toPlayer) > 0f;
     }
 
@@ -85,36 +92,44 @@ public class LevelManager : MonoBehaviour
 
         PieceBase prefab;
 
+        // Use the special first piece when spawning the initial section.
         if (isFirst && firstPiece != null)
         {
             prefab = firstPiece;
         }
         else
         {
-            prefab = levelPieces[Random.Range(0, levelPieces.Count)];
+            // Pick a random piece for the rest of the level.
+            prefab = levelPieces[
+                Random.Range(0, levelPieces.Count)
+            ];
         }
 
-
-        PieceBase spawnedPiece = Instantiate(prefab, container);
+        PieceBase spawnedPiece =
+            Instantiate(prefab, container);
 
         if (_lastSpawnedPiece != null)
         {
+            // Align the new piece with the end of the previous piece.
             Vector3 offset =
                 spawnedPiece.startPoint.position -
                 spawnedPiece.transform.position;
 
             spawnedPiece.transform.position =
-                _lastSpawnedPiece.endPoint.position - offset;
+                _lastSpawnedPiece.endPoint.position -
+                offset;
         }
         else
         {
-            spawnedPiece.transform.position = Vector3.zero;
+            // Place the first piece at the origin.
+            spawnedPiece.transform.position =
+                Vector3.zero;
         }
 
+        // Add the new piece to the active queue.
         _spawnedPieces.Enqueue(spawnedPiece);
 
         _lastSpawnedPiece = spawnedPiece;
-
     }
 
     private void RemoveOldestPiece()
@@ -122,16 +137,19 @@ public class LevelManager : MonoBehaviour
         if (_spawnedPieces.Count == 0)
             return;
 
-        PieceBase piece = _spawnedPieces.Dequeue();
+        PieceBase piece =
+            _spawnedPieces.Dequeue();
 
         if (piece != null)
         {
+            // Delay destruction to keep the transition smooth.
             Destroy(piece.gameObject, 3f);
         }
     }
 
     private void CleanSpawnedPieces()
     {
+        // Remove all currently tracked level pieces.
         foreach (PieceBase piece in _spawnedPieces)
         {
             if (piece != null)

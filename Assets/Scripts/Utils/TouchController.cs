@@ -13,11 +13,13 @@ public class TouchController : MonoBehaviour
 
     void Start()
     {
+        // Start with the target at the object's current position.
         targetPosition = transform.position;
     }
 
     void Update()
     {
+        // Move based on the mouse's horizontal movement while holding the button.
         if (Input.GetMouseButton(0))
         {
             Move(Input.mousePosition.x - pastPosition.x);
@@ -25,13 +27,17 @@ public class TouchController : MonoBehaviour
 
         pastPosition = Input.mousePosition;
 
-        // Movimento suave (Lerp)
-        transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * lerpSpeed);
+        // Smoothly move toward the target position.
+        transform.position = Vector3.Lerp(
+            transform.position,
+            targetPosition,
+            Time.deltaTime * lerpSpeed
+        );
     }
 
     public void Move(float speed)
     {
-        // Atualiza só o alvo, não o transform diretamente
+        // Update the target instead of moving the object directly.
         targetPosition += Vector3.right * speed * velocity * Time.deltaTime;
     }
 }

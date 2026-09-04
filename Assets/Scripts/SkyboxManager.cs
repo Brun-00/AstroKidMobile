@@ -7,6 +7,7 @@ public class SkyboxManager : MonoBehaviour
 
     private void Start()
     {
+        // Choose a random skybox when the scene starts.
         SetRandomSkybox();
     }
 
@@ -14,6 +15,7 @@ public class SkyboxManager : MonoBehaviour
     {
         Material selectedSkybox;
 
+        // Randomly choose between the day and night skyboxes.
         if (Random.value < 0.5f)
         {
             selectedSkybox = daySkybox;
@@ -23,6 +25,7 @@ public class SkyboxManager : MonoBehaviour
             selectedSkybox = nightSkybox;
         }
 
+        // Apply the selected skybox and refresh the environment lighting.
         RenderSettings.skybox = selectedSkybox;
         DynamicGI.UpdateEnvironment();
     }
